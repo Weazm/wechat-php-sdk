@@ -86,17 +86,26 @@ class Wechat {
      * 4： 认证商家服务号
      */
     public function level() {
+        if(isset($_SESSION['account_level'])){
+	        return $_SESSION['account_level'];
+        }
         
-        if ($this->token == '' || $this->appid == '') return 1;
+        if ($this->appid == '' || $this->appsecret == '') {
+	        $_SESSION['account_level'] = 1;
+	        return 1;
+        }
         
         if ($this->partnerid !== '' && $this->partnerkey !== '' && $this->paysignkey !== '') {
             return 4;
+            $_SESSION['account_level'] = 4;
         }
-        
-        if ($this->getUserList()) {
-            return 3;
-        } else {
+        $userList = $this->getUserList();
+        if(isset($userList['code']) && $userList['code'] == 48001) {
+        		$_SESSION['account_level'] = 2;
             return 2;
+        } else {
+        		$_SESSION['account_level'] = 3;
+            return 3;
         }
     }
     /**
@@ -485,8 +494,8 @@ class Wechat {
      * @param string $appsecret
      */
     public function checkAuth($appid = '', $appsecret = '') {
-        if (Session::get('wx_access_token') && Session::get('wx_expires_in') > time()) {
-            $this->access_token = Session::get('wx_access_token');
+        if ($_SESSION['wx_access_token'] && $_SESSION['wx_expires_in'] > time()) {
+            $this->access_token = $_SESSION['wx_access_token'];
             return $this->access_token;
         }
         if (!$appid || !$appsecret) {
@@ -507,8 +516,8 @@ class Wechat {
             $this->access_token = $json['access_token'];
             $expire = $json['expires_in'] ? intval($json['expires_in']) - 100 : 3600;
             //TODO: cache access_token
-            Session::set('wx_access_token', $this->access_token);
-            Session::set('wx_expires_in', time() + $expire);
+            $_SESSION['wx_access_token'] = $this->access_token;
+            $_SESSION['wx_expires_in'] = time() + $expire;
             return $this->access_token;
         }
         return;
